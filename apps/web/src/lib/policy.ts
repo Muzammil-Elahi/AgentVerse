@@ -33,8 +33,10 @@ type PolicyResult = {
 export function evaluatePolicy(query: string): PolicyResult {
   const text = query.toLowerCase();
   const credential = /\b(api[\s-]?keys?|passwords?|private keys?|access tokens?|auth(?:entication)? secrets?|credentials?)\b/;
+  const credentialDisclosure =
+    /\b(show|tell|give|send|share|reveal|expose|print|list|find|retrieve|dump|what(?:'s| is| are))\b.{0,60}\b(api[\s-]?keys?|passwords?|private keys?|access tokens?|auth(?:entication)? secrets?|credentials?)\b/;
   const bypass = /\b(bypass|disable|evade|circumvent)\b.{0,35}\b(security|authentication|controls?|guardrails?)\b/;
-  if (credential.test(text) || bypass.test(text)) {
+  if ((credential.test(text) && credentialDisclosure.test(text)) || bypass.test(text)) {
     return {
       level: "block",
       reason: "Credential request detected; prohibited by organizational security policy.",

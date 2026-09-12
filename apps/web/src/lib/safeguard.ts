@@ -6,6 +6,15 @@ export function evaluateQuery(query: string, approvedAnswers?: ApprovedAnswer[])
   const normalized = query.trim();
   if (!normalized) throw new Error("Enter a query for TrustLayer to evaluate.");
   const base = { id: crypto.randomUUID(), query: normalized, createdAt: new Date().toISOString() };
+  // Policy must screen the entire prompt before cache lookup. Otherwise a
+  // sensitive request can inherit a high similarity score by appending itself
+  // to an approved question and bypass the enforcement boundary.
+  const policy = evaluatePolicy(normalized);
+  if (policy.level !== "allow") return {
+    ...base, decision: policy.level, reason: policy.reason, policyCategory: policy.category,
+    riskSignals: policy.riskSignals, safeAlternative: policy.safeAlternative,
+    reviewOutcome: policy.level === "review" ? "pending" : undefined, llmCalled: false,
+  };
   const match = findSemanticMatch(normalized, approvedAnswers);
   if (match) return {
     ...base, decision: "reuse", reason: "Approved knowledge found above the semantic reuse threshold.",
@@ -13,11 +22,10 @@ export function evaluateQuery(query: string, approvedAnswers?: ApprovedAnswer[])
     similarity: match.similarity, policyCategory: match.entry.category, riskSignals: [],
     llmCalled: false, answer: match.entry.answer,
   };
-  const policy = evaluatePolicy(normalized);
   return {
     ...base, decision: policy.level, reason: policy.reason, policyCategory: policy.category,
     riskSignals: policy.riskSignals, safeAlternative: policy.safeAlternative,
-    reviewOutcome: policy.level === "review" ? "pending" : undefined, llmCalled: false,
+    llmCalled: false,
   };
 }
 
