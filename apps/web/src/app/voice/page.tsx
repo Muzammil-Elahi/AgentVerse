@@ -111,7 +111,6 @@ export default function VoicePage() {
 
   return (
     <main className="ck-page">
-      <p className="ck-eyebrow">In the room</p>
       <h1>Talk to it.</h1>
       <p className="ck-dek">
         WebRTC straight from this browser to OpenAI Realtime, on <code>{REALTIME_MODEL}</code>. Same

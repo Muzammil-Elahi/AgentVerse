@@ -21,7 +21,7 @@ test("account card tolerates partial arrays and nested entries", () => {
     facts: [null, {}, { label: "Impact" }, { label: "Since", value: "10:00" }],
     nextSteps: [null, "Check deployment"],
   }));
-  assert.match(html, /var\(--muted\)/);
+  assert.match(html, /var\(--ink-soft\)/);
   assert.match(html, /Impact/);
   assert.match(html, /10:00/);
   assert.match(html, /Check deployment/);
@@ -54,7 +54,7 @@ test("complete account and timeline arguments render their content", () => {
     headline: "Checkout restored", summary: "All customers can check out",
     facts: [{ label: "Errors", value: "0%" }], nextSteps: ["Monitor"], tone: "good",
   }));
-  for (const text of ["Checkout restored", "All customers can check out", "Errors", "0%", "Monitor", "#2e7d5b"]) {
+  for (const text of ["Checkout restored", "All customers can check out", "Errors", "0%", "Monitor", "var(--good)"]) {
     assert.ok(card.includes(text));
   }
   assert.doesNotMatch(card, /Loading|Preparing|Gathering/);

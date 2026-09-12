@@ -86,7 +86,7 @@ export function WorkplaceFollowups({
         <ul className="ck-task-list">
           {tasks.map((task) => (
             <li key={task.id}>
-              <span aria-hidden="true">○</span>
+              <span className="ck-marker" aria-hidden="true">○</span>
               <div>
                 <strong>{task.title}</strong>
                 <code className="ck-record-id">{task.id}</code>

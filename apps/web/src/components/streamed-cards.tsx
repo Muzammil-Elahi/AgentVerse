@@ -15,7 +15,7 @@ export interface TimelineProps {
   rows?: Array<Array<string | null> | null> | null;
 }
 
-const toneColor = { neutral: "var(--muted)", good: "#2e7d5b", attention: "var(--accent)" } as const;
+const toneColor = { neutral: "var(--ink-soft)", good: "var(--good)", attention: "var(--risk)" } as const;
 
 export function AccountCard({ headline, summary, facts, nextSteps, tone }: AccountCardProps) {
   const color = tone === "good" || tone === "attention" ? toneColor[tone] : toneColor.neutral;
