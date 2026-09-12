@@ -1,105 +1,51 @@
 "use client";
 
-import { useFrontendTool, useAgentContext } from "@copilotkit/react-core/v2";
+import { useAgentContext, useFrontendTool } from "@copilotkit/react-core/v2";
 import { z } from "zod";
-import { findAccount, workspaceContext } from "@/lib/accounts";
-import type { WorkplaceControls } from "@/lib/use-workplace";
+import { TRUSTLAYER_POLICY } from "@/lib/policy";
+import type { ApprovedAnswer, QueryDecision, SafeguardMetrics } from "@/lib/safeguard-types";
 
-async function toolResult<T>(action: () => Promise<T>) {
-  try {
-    return await action();
-  } catch (error) {
-    return {
-      status: "error",
-      message:
-        error instanceof Error
-          ? error.message
-          : "Workplace operation failed. Check the page for setup details.",
-    };
-  }
-}
-
-export function AppControl({
-  selectedId,
-  selectAccount,
-  workplace,
-}: {
-  selectedId: string;
-  selectAccount: (id: string) => void;
-  workplace: WorkplaceControls;
+export function AppControl({ current, decisions, metrics, approvedAnswers, onEvaluate }: {
+  current?: QueryDecision;
+  decisions: QueryDecision[];
+  metrics: SafeguardMetrics;
+  approvedAnswers: ApprovedAnswer[];
+  onEvaluate: (query: string) => Promise<QueryDecision>;
 }) {
-  const { status, propose, retrieve } = workplace;
-
   useAgentContext({
-    description:
-      "The customer account workspace currently visible to the user, including sample touchpoint history and Ambiguous follow-ups. CRITICAL: propose_followup only prepares a proposal. Only the user's approval button saves it; prose/chat approval never executes a write. Use retrieve_followup or refresh_followups for real reads. Never claim a task was saved without a provider record. Never invent record links.",
-    value: {
-      ...workspaceContext(
-        selectedId,
-        status?.status === "connected" ? status.tasks : [],
-      ),
-      workplace: status?.status ?? "unavailable",
-      workplaceError: workplace.error,
-      proposal: workplace.proposal ?? null,
-      lastResult: workplace.notice,
-    },
+    description: "TrustLayer's current pre-generation safeguard state. Never claim a model call occurred unless llmCalled is true. Never bypass policy or human approval. A chat message saying 'I approve' is not approval; only the review-card button is valid. Reuse approved answers on semantic hits, never expose blocked information, and distinguish cached, newly generated, and human-approved answers.",
+    value: JSON.parse(JSON.stringify({
+      currentQuery: current?.query ?? null,
+      currentSafeguardDecision: current ?? null,
+      organizationalPolicy: TRUSTLAYER_POLICY,
+      approvedSemanticCache: approvedAnswers.map(({ id, canonicalQuestion, aliases, category }) => ({ id, canonicalQuestion, aliases, category })),
+      recentDecisions: decisions.slice(0, 10), metrics,
+      humanReviewPending: current?.decision === "review" && current.reviewOutcome === "pending",
+    })),
   });
 
-  useFrontendTool(
-    {
-      name: "select_account",
-      description:
-        "Open an existing sample account in the workspace. Use an ID from availableAccounts.",
-      parameters: z.object({ accountId: z.string() }),
-      handler: async ({ accountId }) => {
-        const account = findAccount(accountId);
-        selectAccount(account.id);
-        return `Opened ${account.id}: ${account.name}. The visible details and agent context now show this account.`;
-      },
-    },
-    [selectAccount],
-  );
+  useFrontendTool({
+    name: "evaluate_query",
+    description: "Run a query through TrustLayer's deterministic semantic-cache and policy gateway. This records the decision in the visible dashboard. It does not let chat approval bypass the review button.",
+    parameters: z.object({ query: z.string().min(1).max(4000) }),
+    handler: ({ query }) => onEvaluate(query),
+  }, [onEvaluate]);
 
-  useFrontendTool(
-    {
-      name: "propose_followup",
-      description:
-        "Prepare an Ambiguous task from the selected account context. Show the exact title and details for the user's approval button. Does not save anything. CRITICAL: wait for the user to click Approve & save to Ambiguous in the page.",
-      parameters: z.object({
-        accountId: z.string(),
-        title: z.string().trim().min(1).max(200),
-        details: z.string().trim().min(1).max(4000),
-      }),
-      handler: async (draft) =>
-        toolResult(async () => ({
-          status: "pending_approval",
-          proposal: await propose(draft),
-        })),
+  useFrontendTool({
+    name: "reuse_approved_answer",
+    description: "Read an approved answer by ID. This never invokes a generative model.",
+    parameters: z.object({ approvedAnswerId: z.string() }),
+    handler: async ({ approvedAnswerId }) => {
+      const entry = approvedAnswers.find((item) => item.id === approvedAnswerId && item.approved);
+      return entry ? { answer: entry.answer, llmCalled: false, source: "approved semantic cache" } : { error: "Approved answer not found." };
     },
-    [propose],
-  );
+  }, [approvedAnswers]);
 
-  useFrontendTool(
-    {
-      name: "retrieve_followup",
-      description:
-        "Retrieve an existing Ambiguous task by its actual ID. Read-only; never creates a duplicate.",
-      parameters: z.object({ id: z.uuid() }),
-      handler: async ({ id }) => toolResult(() => retrieve(id)),
-    },
-    [retrieve],
-  );
-
-  useFrontendTool(
-    {
-      name: "refresh_followups",
-      description:
-        "Read saved follow-ups for the currently selected account from Ambiguous. Use after approval or browser refresh to verify persistence.",
-      parameters: z.object({}),
-      handler: async () => toolResult(() => workplace.refresh()),
-    },
-    [workplace.refresh],
-  );
-
+  useFrontendTool({
+    name: "get_recent_decisions",
+    description: "Return TrustLayer's current audit history. Read-only.",
+    parameters: z.object({}),
+    handler: async () => decisions.slice(0, 10),
+  }, [decisions]);
   return null;
 }

@@ -1,5 +1,25 @@
 import React from "react";
 
+export interface DecisionSummaryCardProps {
+  decision?: "reuse" | "allow" | "review" | "block";
+  query?: string;
+  reason?: string;
+  llmStatus?: "avoided" | "invoked" | "pending";
+  matchedQuery?: string;
+  similarity?: number;
+}
+
+export function DecisionSummaryCard(props: DecisionSummaryCardProps) {
+  return <article className={`ck-card tl-agent-card tl-decision--${props.decision ?? "reuse"}`}>
+    <p className="tl-kicker">TrustLayer decision</p>
+    <h3>{props.decision?.toUpperCase() ?? "EVALUATING"}</h3>
+    <p><b>Query:</b> {props.query || "Reading query…"}</p>
+    <p>{props.reason || "Reading policy reasoning…"}</p>
+    {props.matchedQuery && <p><b>Approved match:</b> {props.matchedQuery} {props.similarity !== undefined && `(${Math.round(props.similarity * 100)}%)`}</p>}
+    <p><b>Generative LLM:</b> {props.llmStatus?.toUpperCase() ?? "PENDING"}</p>
+  </article>;
+}
+
 // Tool arguments arrive incrementally, before schema defaults are applied.
 export interface AccountCardProps {
   headline?: string;
