@@ -4,7 +4,7 @@ import { evaluateQuery } from "@/lib/safeguard";
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as { query?: unknown };
-    if (typeof body.query !== "string" || body.query.length > 4_000)
+    if (typeof body.query !== "string" || !body.query.trim() || body.query.length > 4_000)
       return Response.json({ error: "A valid query is required." }, { status: 400 });
 
     // This server-side check is the enforcement boundary. The browser cannot
