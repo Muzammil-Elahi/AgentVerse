@@ -4,8 +4,8 @@ import "@copilotkit/react-core/v2/styles.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Renewal desk — Agents, Everywhere",
-  description: "Pick an account, ask your assistant, and add a follow-up.",
+  title: "TrustLayer — Intelligent LLM Safeguard Gateway",
+  description: "Reuse, allow, review, or block prompts before they reach the generative model.",
 };
 
 export default function RootLayout({
