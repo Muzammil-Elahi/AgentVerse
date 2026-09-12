@@ -3,20 +3,20 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
-import { findIncident } from "../incidents";
+import { findAccount } from "../accounts";
 import type { Proposal, WorkplaceTask } from "../followup-types";
 import type { Workplace } from "./workplace";
 
 const draftSchema = z
   .object({
-    incidentId: z.string(),
+    accountId: z.string(),
     title: z.string().trim().min(1).max(200),
     details: z.string().trim().min(1).max(4000),
   })
   .strict();
 const storedSchema = z.object({
   id: z.uuid(),
-  incidentId: z.string(),
+  accountId: z.string(),
   title: z.string(),
   description: z.string(),
   workspaceId: z.string(),
@@ -28,8 +28,8 @@ const storedSchema = z.object({
 });
 const hash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
-const marker = (incidentId: string) =>
-  `agents-everywhere:${findIncident(incidentId).id}`;
+const marker = (accountId: string) =>
+  `agents-everywhere:${findAccount(accountId).id}`;
 function fileExists(error: unknown) {
   return error instanceof Error && "code" in error && error.code === "EEXIST";
 }
@@ -45,8 +45,8 @@ export class FollowupService {
     private directory: string,
     private now = Date.now,
   ) {}
-  async list(incidentId: string) {
-    const tag = marker(incidentId);
+  async list(accountId: string) {
+    const tag = marker(accountId);
     return (await this.workplace.list(tag)).filter((t) =>
       t.description.split("\n").includes(tag),
     );
@@ -56,21 +56,21 @@ export class FollowupService {
   }
   async propose(session: string, input: unknown): Promise<Proposal> {
     const draft = draftSchema.parse(input);
-    const incident = findIncident(draft.incidentId);
+    const account = findAccount(draft.accountId);
     const identity = await this.workplace.identity();
     const actionKey = hash(
       JSON.stringify([
         identity.workspaceId,
-        incident.id,
+        account.id,
         draft.title,
         draft.details,
       ]),
     );
     const proposal = {
       id: randomUUID(),
-      incidentId: incident.id,
+      accountId: account.id,
       title: draft.title,
-      description: `${draft.details}\n\nSample incident: ${incident.id} — ${incident.title}\n${marker(incident.id)}\nfollowup:${actionKey}`,
+      description: `${draft.details}\n\nAccount: ${account.id} — ${account.name}\n${marker(account.id)}\nfollowup:${actionKey}`,
       workspaceId: identity.workspaceId,
       identityName: identity.name,
       identityId: identity.id,

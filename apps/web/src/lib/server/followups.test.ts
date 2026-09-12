@@ -8,9 +8,9 @@ import type { Workplace, WorkplaceTask } from "./workplace";
 
 const session = "a".repeat(64);
 const input = {
-  incidentId: "INC-1042",
-  title: "Check pool metrics",
-  details: "Compare before and after deploy.",
+  accountId: "ACC-2041",
+  title: "Schedule executive check-in",
+  details: "Reach out to Priya Anand before the renewal window opens.",
 };
 class FakeWorkplace implements Workplace {
   workspaceId = "workspace-a";
@@ -110,7 +110,7 @@ test("concurrent approval and restart cannot duplicate a saved task; refresh rea
   const restarted = new FollowupService(provider, directory);
   await restarted.approve(session, p.id);
   const before = provider.reads;
-  assert.equal((await restarted.list("INC-1042"))[0].id, provider.tasks[0].id);
+  assert.equal((await restarted.list("ACC-2041"))[0].id, provider.tasks[0].id);
   assert.ok(provider.reads > before);
   const another = await restarted.propose(session, input);
   await restarted.approve(session, another.id);
@@ -144,7 +144,7 @@ test("a lost create reply is reconciled from Ambiguous without a second create",
 test("invalid proposal inputs fail before provider writes", async (t) => {
   const { service, provider } = await fixture(t);
   await assert.rejects(
-    service.propose(session, { ...input, incidentId: "unknown" }),
+    service.propose(session, { ...input, accountId: "unknown" }),
   );
   await assert.rejects(service.propose(session, { ...input, title: " " }));
   await assert.rejects(

@@ -6,7 +6,7 @@ export type WorkplaceTask = {
 };
 export type Proposal = {
   id: string;
-  incidentId: string;
+  accountId: string;
   title: string;
   description: string;
   workspaceId: string;

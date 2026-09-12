@@ -16,27 +16,27 @@
 import { useComponent, useHumanInTheLoop } from "@copilotkit/react-core/v2";
 import { z } from "zod";
 
-import { IncidentCard, Timeline } from "./streamed-cards";
+import { AccountCard, Timeline } from "./streamed-cards";
 
 export function GenerativeUI() {
   useComponent({
-    name: "incident_card",
+    name: "account_card",
     description:
-      "Draw the current state of the incident as a card. Call this once you have read the context, and again when the picture changes.",
+      "Draw the current state of the account as a card. Call this once you have read the context, and again when the picture changes.",
     parameters: z.object({
-      headline: z.string().describe("What is broken, in under ten words."),
-      summary: z.string().describe("Who or what is affected."),
+      headline: z.string().describe("The account's one-line status, in under ten words."),
+      summary: z.string().describe("Why it matters right now."),
       facts: z.array(z.object({ label: z.string(), value: z.string() })).max(4).default([]),
       nextSteps: z.array(z.string()).max(3).default([]),
       tone: z.enum(["neutral", "good", "attention"]).default("neutral"),
     }),
-    render: IncidentCard,
+    render: AccountCard,
   });
 
   useComponent({
     name: "timeline",
     description:
-      "Draw an ordered timeline of what happened when. Call this when there are three or more events worth ordering.",
+      "Draw an ordered timeline of account touchpoints — calls, tickets, usage changes. Call this when there are three or more events worth ordering.",
     parameters: z.object({
       title: z.string().optional(),
       columns: z.array(z.string()).min(1).max(4),

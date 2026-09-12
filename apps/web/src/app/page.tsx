@@ -3,37 +3,39 @@
 import { useCallback, useState } from "react";
 import {
   CopilotChat,
+  CopilotChatConfigurationProvider,
+  CopilotThreadsDrawer,
   useConfigureSuggestions,
 } from "@copilotkit/react-core/v2";
 import { GenerativeUI } from "@/components/generative-ui";
 import { AppControl } from "@/components/app-control";
-import { findIncident, incidents, workspaceContext } from "@/lib/incidents";
+import { findAccount, accounts, workspaceContext } from "@/lib/accounts";
 import { useWorkplace } from "@/lib/use-workplace";
 import { WorkplaceFollowups } from "@/components/workplace-followups";
 
 export default function Home() {
-  const [selectedId, setSelectedId] = useState<string>(incidents[0].id);
+  const [selectedId, setSelectedId] = useState<string>(accounts[0].id);
   const workplace = useWorkplace(selectedId);
-  const { selectedIncident: incident } = workspaceContext(
+  const { selectedAccount: account } = workspaceContext(
     selectedId,
     workplace.status?.status === "connected" ? workplace.status.tasks : [],
   );
-  const selectIncident = useCallback((id: string) => {
-    setSelectedId(findIncident(id).id);
+  const selectAccount = useCallback((id: string) => {
+    setSelectedId(findAccount(id).id);
   }, []);
 
   useConfigureSuggestions(
     {
       suggestions: [
         {
-          title: "Summarize this incident",
+          title: "Summarize this account",
           message:
-            "Summarize the selected incident using the page context. What needs attention?",
+            "Summarize the selected account using the page context. What needs attention before renewal?",
         },
         {
           title: "Propose a follow-up",
           message:
-            "Prepare one useful Ambiguous follow-up for the selected incident. Show me the proposal before it is saved.",
+            "Prepare one useful Ambiguous follow-up for the selected account. Show me the proposal before it is saved.",
         },
       ],
       available: "before-first-message",
@@ -46,65 +48,79 @@ export default function Home() {
       <GenerativeUI />
       <AppControl
         selectedId={selectedId}
-        selectIncident={selectIncident}
+        selectAccount={selectAccount}
         workplace={workplace}
       />
       <main className="ck-workspace">
         <header className="ck-workspace-header">
           <div>
             <p className="ck-eyebrow">Agents, everywhere · Web example</p>
-            <h1>Incident assistant</h1>
+            <h1>Renewal desk</h1>
             <p className="ck-intro">
-              Pick an incident. Ask your assistant. Review a follow-up.
+              Pick an account. Ask your assistant. Review a follow-up.
             </p>
           </div>
           <span className="ck-tag">Sample data</span>
         </header>
 
         <div className="ck-workspace-grid">
-          <section className="ck-panel" aria-labelledby="incident-title">
-            <div className="ck-incident-picker">
-              <label htmlFor="incident-select">Incident</label>
+          <section className="ck-panel" aria-labelledby="account-title">
+            <div className="ck-account-picker">
+              <label htmlFor="account-select">Account</label>
               <select
-                id="incident-select"
+                id="account-select"
                 value={selectedId}
-                onChange={(event) => selectIncident(event.target.value)}
+                onChange={(event) => selectAccount(event.target.value)}
               >
-                {incidents.map((item) => (
+                {accounts.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.id} · {item.service}
+                    {item.id} · {item.name}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="ck-detail">
-              <span className="ck-status-label">{incident.status}</span>
-              <h2 id="incident-title">{incident.title}</h2>
-              <p>{incident.summary}</p>
-              <details className="ck-more" key={incident.id}>
-                <summary>Details &amp; timeline</summary>
+              <span className="ck-status-label">{account.status}</span>
+              <h2 id="account-title">{account.name}</h2>
+              <p>{account.summary}</p>
+              <details className="ck-more" key={account.id}>
+                <summary>Details &amp; touchpoints</summary>
                 <dl className="ck-detail-facts">
                   <div>
-                    <dt>Incident lead</dt>
-                    <dd>{incident.owner}</dd>
+                    <dt>Account manager</dt>
+                    <dd>{account.owner}</dd>
                   </div>
                   <div>
-                    <dt>Severity</dt>
-                    <dd>{incident.severity}</dd>
+                    <dt>Plan</dt>
+                    <dd>
+                      {account.plan} · {account.mrr}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Health score</dt>
+                    <dd>{account.healthScore}</dd>
+                  </div>
+                  <div>
+                    <dt>Renewal date</dt>
+                    <dd>{account.renewalDate}</dd>
+                  </div>
+                  <div>
+                    <dt>Primary contact</dt>
+                    <dd>{account.primaryContact}</dd>
                   </div>
                   <div>
                     <dt>Last update</dt>
-                    <dd>{incident.updated}</dd>
+                    <dd>{account.updated}</dd>
                   </div>
                 </dl>
-                <h3>Impact</h3>
-                <p>{incident.impact}</p>
-                <h3>Timeline</h3>
+                <h3>Opportunity</h3>
+                <p>{account.opportunity}</p>
+                <h3>Touchpoints</h3>
                 <ol className="ck-timeline">
-                  {incident.timeline.map((event) => (
+                  {account.timeline.map((event) => (
                     <li key={event.time}>
-                      <time>{event.time} UTC</time>
+                      <time>{event.time}</time>
                       <div>
                         <strong>{event.author}</strong>
                         <p>{event.detail}</p>
@@ -115,24 +131,27 @@ export default function Home() {
               </details>
             </div>
 
-            <WorkplaceFollowups incidentId={selectedId} workplace={workplace} />
+            <WorkplaceFollowups accountId={selectedId} workplace={workplace} />
           </section>
 
           <section
             className="ck-panel ck-assistant"
             aria-labelledby="assistant-title"
           >
-            <header className="ck-assistant-header">
-              <h2 id="assistant-title">Ask assistant</h2>
-              <p>It can read this incident and prepare follow-ups.</p>
-            </header>
-            <CopilotChat
-              className="ck-chat"
-              labels={{
-                welcomeMessageText: "What needs attention?",
-                chatInputPlaceholder: "Ask about this incident…",
-              }}
-            />
+            <CopilotChatConfigurationProvider>
+              <header className="ck-assistant-header">
+                <h2 id="assistant-title">Ask assistant</h2>
+                <p>It can read this account and prepare follow-ups.</p>
+                <CopilotThreadsDrawer />
+              </header>
+              <CopilotChat
+                className="ck-chat"
+                labels={{
+                  welcomeMessageText: "What needs attention on this account?",
+                  chatInputPlaceholder: "Ask about this account…",
+                }}
+              />
+            </CopilotChatConfigurationProvider>
           </section>
         </div>
       </main>

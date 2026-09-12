@@ -8,9 +8,9 @@ import type {
 
 import { requestFollowups as api } from "./followup-client";
 
-export function useWorkplace(incidentId: string) {
+export function useWorkplace(accountId: string) {
   const [snapshot, setSnapshot] = useState<{
-    incidentId: string;
+    accountId: string;
     status: WorkplaceStatus;
   }>();
   const [proposal, setProposal] = useState<Proposal>();
@@ -18,26 +18,26 @@ export function useWorkplace(incidentId: string) {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const sequence = useRef(0);
-  const selectedIncident = useRef(incidentId);
-  selectedIncident.current = incidentId;
+  const selectedAccount = useRef(accountId);
+  selectedAccount.current = accountId;
   const refresh = useCallback(async () => {
-    const incidentId = selectedIncident.current;
+    const accountId = selectedAccount.current;
     const request = ++sequence.current;
     setError("");
     try {
       const status = await api<WorkplaceStatus>(
-        `?incidentId=${encodeURIComponent(incidentId)}`,
+        `?accountId=${encodeURIComponent(accountId)}`,
       );
       if (
         request === sequence.current &&
-        incidentId === selectedIncident.current
+        accountId === selectedAccount.current
       )
-        setSnapshot({ incidentId, status });
+        setSnapshot({ accountId, status });
       return status;
     } catch (error) {
       if (
         request === sequence.current &&
-        incidentId === selectedIncident.current
+        accountId === selectedAccount.current
       ) {
         setSnapshot(undefined);
         setError(
@@ -55,9 +55,9 @@ export function useWorkplace(incidentId: string) {
     return () => {
       sequence.current++;
     };
-  }, [incidentId, refresh]);
+  }, [accountId, refresh]);
   const propose = useCallback(
-    async (draft: { incidentId: string; title: string; details: string }) => {
+    async (draft: { accountId: string; title: string; details: string }) => {
       try {
         const { proposal } = await api<{ proposal: Proposal }>("", {
           operation: "propose",
@@ -128,7 +128,7 @@ export function useWorkplace(incidentId: string) {
     }
   };
   const status =
-    snapshot?.incidentId === incidentId ? snapshot.status : undefined;
+    snapshot?.accountId === accountId ? snapshot.status : undefined;
   return {
     status,
     proposal,

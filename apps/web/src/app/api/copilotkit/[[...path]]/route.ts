@@ -19,14 +19,40 @@
 import { randomUUID } from "node:crypto";
 import {
   CopilotRuntime,
+  CopilotKitIntelligence,
   createCopilotHonoHandler,
 } from "@copilotkit/runtime/v2";
-import { makeAgent } from "agent-core";
+import { makeAgent, ACCOUNT_WORKSPACE_PROMPT } from "agent-core";
 
 // Web writes use /api/followups after a browser approval. Never expose raw MCP writes here.
-const runtime = new CopilotRuntime({
-  agents: () => ({ default: makeAgent(randomUUID(), { workplace: false }) }),
-});
+const intelligenceApiKey = process.env.CPK_INTELLIGENCE_API_KEY?.trim();
+
+// This app has one local, unauthenticated demo persona rather than real sign-in.
+// identifyUser only scopes Intelligence threads to that persona; it grants no access.
+const runtime = new CopilotRuntime(
+  intelligenceApiKey
+    ? {
+        agents: () => ({
+          default: makeAgent(randomUUID(), {
+            workplace: false,
+            prompt: ACCOUNT_WORKSPACE_PROMPT,
+          }),
+        }),
+        intelligence: new CopilotKitIntelligence({ apiKey: intelligenceApiKey }),
+        identifyUser: () => ({
+          id: "demo-account-manager",
+          name: "Demo account manager",
+        }),
+      }
+    : {
+        agents: () => ({
+          default: makeAgent(randomUUID(), {
+            workplace: false,
+            prompt: ACCOUNT_WORKSPACE_PROMPT,
+          }),
+        }),
+      },
+);
 
 const app = createCopilotHonoHandler({
   runtime,

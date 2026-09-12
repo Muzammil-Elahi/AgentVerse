@@ -11,7 +11,7 @@
     "check:workplace": "node --env-file-if-exists=../../.env --import tsx scripts/check-workplace.ts"
   },
   "dependencies": {
-    "@copilotkit/react-core": "1.70.1",
+    "@copilotkit/react-core": "1.70.3",
     "@copilotkit/runtime": "1.70.3",
     "@openai/agents": "^0.17.2",
     "agent-core": "*",
